@@ -3,19 +3,26 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ASTListener extends miniCBaseListener{
+import java.util.ArrayList;
+import java.util.List;
+
+public class ASTListener extends miniCBaseListener {
 
     //use to start traversing
     private ast firstNode;
     private List<ast> allParents = new ArrayList<>();
-    public void addParent(ast parent){
+    private Tabelle symbolTable = new Tabelle();
+
+    public void addParent(ast parent) {
         this.allParents.add(parent);
     }
-    public void removeParent(){
+
+    public void removeParent() {
         this.allParents.removeLast();
     }
-    public ast getCurrentParentNode(){
-        return this.allParents.get(this.allParents.size()-1);
+
+    public ast getCurrentParentNode() {
+        return this.allParents.get(this.allParents.size() - 1);
     }
 
     public ast getFirstNode() {
@@ -27,10 +34,11 @@ public class ASTListener extends miniCBaseListener{
     @Override
     public void enterProgram(miniCParser.ProgramContext ctx) {
         List<ast> children = new ArrayList<>();
-        String[] text=null;
-        this.firstNode=new programNode(text,children);
+        String[] text = null;
+        this.firstNode = new programNode(text, children);
         this.firstNode.setParent(null);
         this.addParent(firstNode);
+        symbolTable.openScope();
         super.enterProgram(ctx);
     }
 
@@ -45,7 +53,15 @@ public class ASTListener extends miniCBaseListener{
         if (ctx.array() != null) {
             arraySize = ctx.array().getText();  // Arraygröße, z. B. [10]
         }
-        String[] text={type, name, arraySize};
+        String[] text = {type, name, arraySize};
+
+        if (symbolTable.contains(name)) {
+            System.out.println("Fehler: Variable '" + name + "' ist bereits im aktuellen Scope definiert.");
+        } else if (symbolTable.lookup(name) != null) {
+            System.out.println("Fehler: Variable '" + name + "' ist bereits in einem oberen Scope definiert.");
+        } else {
+            symbolTable.addSymbol(name, new Tabelle.Symbol(name, type, false));
+        }
 
         vardeclNode vardeclNode = new vardeclNode(text, children);
 
@@ -67,12 +83,12 @@ public class ASTListener extends miniCBaseListener{
     public void enterAssign(miniCParser.AssignContext ctx) {
         List<ast> children = new ArrayList<>();
         String variableName = ctx.ID().getText();
-        String array=null;
-        if(ctx.NUMBER() != null){
-            array=ctx.NUMBER().getText();
+        String array = null;
+        if (ctx.NUMBER() != null) {
+            array = ctx.NUMBER().getText();
         }
 
-        String[] text={variableName, array};
+        String[] text = {variableName, array};
         assignNode assignNode = new assignNode(text, children);
 
         assignNode.setParent(this.getCurrentParentNode());
@@ -93,19 +109,28 @@ public class ASTListener extends miniCBaseListener{
         List<ast> children = new ArrayList<>();
         String funcReturn = ctx.type().getText();
         String functionName = ctx.ID().getText();
+
+        if (symbolTable.contains(functionName)) {
+            System.out.println("Fehler: Funktion '" + functionName + "' ist bereits im aktuellen Scope definiert.");
+        } else if (symbolTable.lookup(functionName) != null) {
+            System.out.println("Fehler: Funktion '" + functionName + "' ist bereits in einem oberen Scope definiert.");
+        } else {
+            symbolTable.addSymbol(functionName, new Tabelle.Symbol(functionName, funcReturn, true));
+        }
+
         ArrayList<String> parameters = new ArrayList<>();
-        if(ctx.params() != null){
-            for(ParseTree a:ctx.params().children){
-                if(!a.getText().equals(",")){
+        if (ctx.params() != null) {
+            for (ParseTree a : ctx.params().children) {
+                if (!a.getText().equals(",")) {
                     parameters.add(a.getText());
                 }
             }
         }
-        String[] text = new String[parameters.size() +2];
-        text[0]=funcReturn;
-        text[1]=functionName;
-        for(int a=0;a<parameters.size();a++){
-            text[a+2]=parameters.get(a);
+        String[] text = new String[parameters.size() + 2];
+        text[0] = funcReturn;
+        text[1] = functionName;
+        for (int a = 0; a < parameters.size(); a++) {
+            text[a + 2] = parameters.get(a);
         }
         fndeclNode fncDeclNode = new fndeclNode(text, children);
 
@@ -125,13 +150,13 @@ public class ASTListener extends miniCBaseListener{
     @Override
     public void enterExpr(miniCParser.ExprContext ctx) {
         List<ast> children = new ArrayList<>();
-        String[] text=null;
+        String[] text = null;
         //expr with 3 parts
         if (ctx.getChildCount() == 3) {
             String left = ctx.getChild(0).getText();
             String operator = ctx.getChild(1).getText();
             String right = ctx.getChild(2).getText();
-            text= new String[]{left, operator, right};
+            text = new String[]{left, operator, right};
         }
         //number
         else if (ctx.NUMBER() != null) {
@@ -148,9 +173,12 @@ public class ASTListener extends miniCBaseListener{
             String fncall = ctx.fncall().getText();
             text = new String[]{fncall};
         }
-        // expr is something else
-        else{
+        // string
+        else if (ctx.STRING() != null) {
             String txt = ctx.STRING().getText();
+            text = new String[]{txt};
+        } else {
+            String txt = ctx.getText();
             text = new String[]{txt};
         }
         exprNode expNode = new exprNode(text, children);
@@ -170,6 +198,7 @@ public class ASTListener extends miniCBaseListener{
 
     @Override
     public void enterBlock(miniCParser.BlockContext ctx) {
+        symbolTable.openScope();
         List<ast> children = new ArrayList<>();
         blockNode blockNode = new blockNode(null, children);
         blockNode.setParent(this.getCurrentParentNode());
@@ -181,6 +210,7 @@ public class ASTListener extends miniCBaseListener{
 
     @Override
     public void exitBlock(miniCParser.BlockContext ctx) {
+        symbolTable.closeScope();
         this.removeParent();
         super.exitBlock(ctx);
     }
@@ -190,7 +220,7 @@ public class ASTListener extends miniCBaseListener{
         List<ast> children = new ArrayList<>();
 
         String condition = ctx.expr().getText();
-        String[] text={condition};
+        String[] text = {condition};
         whileNode whileNode = new whileNode(text, children);
         whileNode.setParent(this.getCurrentParentNode());
         whileNode.getParent().addChild(whileNode);
@@ -201,6 +231,7 @@ public class ASTListener extends miniCBaseListener{
 
     @Override
     public void exitWhile(miniCParser.WhileContext ctx) {
+
         this.removeParent();
         super.exitWhile(ctx);
     }
@@ -209,9 +240,9 @@ public class ASTListener extends miniCBaseListener{
     public void enterCond(miniCParser.CondContext ctx) {
         List<ast> children = new ArrayList<>();
         String condition = ctx.expr().getText();
-        String[] text={condition};
+        String[] text = {condition};
 
-        String elseCondition=null;
+        String elseCondition = null;
         //check if there's an else statement
         if (ctx.block(1) != null) {
             elseCondition = ctx.block(1).getText();
@@ -236,14 +267,14 @@ public class ASTListener extends miniCBaseListener{
     public void enterReturn(miniCParser.ReturnContext ctx) {
         List<ast> children = new ArrayList<>();
         ArrayList<String> returns = new ArrayList<>();
-        for(ParseTree a:ctx.expr().children){
-            if(!a.getText().equals("return")){
+        for (ParseTree a : ctx.expr().children) {
+            if (!a.getText().equals("return")) {
                 returns.add(a.getText());
             }
         }
-        String[] text =new String[returns.size()];
-        for(int i=0;i<returns.size();i++){
-            text[i]=returns.get(i);
+        String[] text = new String[returns.size()];
+        for (int i = 0; i < returns.size(); i++) {
+            text[i] = returns.get(i);
         }
 
         returnNode returnNode = new returnNode(text, children);
@@ -264,11 +295,11 @@ public class ASTListener extends miniCBaseListener{
     public void enterFncall(miniCParser.FncallContext ctx) {
         List<ast> children = new ArrayList<>();
         String functionName = ctx.ID().getText();
-        String[] text={functionName};
-        String args=null;
+        String[] text = {functionName};
+        String args = null;
         if (ctx.args() != null) {
-            args=ctx.args().getText();
-            text= new String[]{functionName, args};
+            args = ctx.args().getText();
+            text = new String[]{functionName, args};
         }
 
         fncallNode fncall = new fncallNode(text, children);
@@ -283,6 +314,27 @@ public class ASTListener extends miniCBaseListener{
     public void exitFncall(miniCParser.FncallContext ctx) {
         this.removeParent();
         super.exitFncall(ctx);
+    }
+
+    @Override
+    public void enterParams(miniCParser.ParamsContext ctx) {
+
+        int b = 0;
+        for (int a = 0; a < ctx.getChildCount(); a++) {
+            if (ctx.getChild(a).getText().equals(ctx.ID(b).getText())) {
+                String name = ctx.ID(b).getText();
+                String type = ctx.type(b).getText();
+                if (symbolTable.contains(name)) {
+                    System.out.println("Fehler: Parameter '" + name + "' ist bereits im aktuellen Scope definiert.");
+                } else if (symbolTable.lookup(name) != null) {
+                    System.out.println("Fehler: Parameter '" + name + "' ist bereits in einem oberen Scope definiert.");
+                } else {
+                    symbolTable.addSymbol(name, new Tabelle.Symbol(name, type, false));
+                }
+                b++;
+            }
+        }
+
     }
 
 
