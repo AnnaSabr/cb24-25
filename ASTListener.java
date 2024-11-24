@@ -297,9 +297,14 @@ public class ASTListener extends miniCBaseListener {
         String functionName = ctx.ID().getText();
         String[] text = {functionName};
         String args = null;
+
         if (ctx.args() != null) {
             args = ctx.args().getText();
             text = new String[]{functionName, args};
+        }
+
+        if (!symbolTable.contains(functionName)&&symbolTable.lookup(functionName)==null) {
+            System.out.println("Fehler: Funktion'" + functionName + "' ist in keinem Scope definiert.");
         }
 
         fncallNode fncall = new fncallNode(text, children);
