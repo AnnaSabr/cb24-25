@@ -83,8 +83,13 @@ class fndeclNode extends ast {
     public void print(String indent) {
         System.out.println(indent + "Function Declaration:");
         System.out.println(indent + "  Return Type: " + text[0] + ", Name: " + text[1]);
-        if (text[2] != null) {
-            System.out.println(indent + "  Parameters: " + text[2]);
+        if (text.length>2) {
+            System.out.print(indent + "  Parameters: ");
+            for (int h =0; h<text.length-1; h+=2) {
+                System.out.print(text[h]+" "+text[h+1]+", ");
+            }
+            System.out.println("");
+
         }
         for (ast child : children) {
             child.print(indent + "  "); // Erhöht die Einrückung für Kinder
@@ -99,7 +104,11 @@ class returnNode extends ast {
     }
 
     public void print(String indent) {
-        System.out.println(indent + "Return Statement: " + text[0]);
+        System.out.print(indent + "Return Statement: ");
+        for (int c =0; c<text.length; c++) {
+            System.out.print(text[c]);
+        }
+        System.out.println();
     }
 }
 
@@ -130,10 +139,10 @@ class ifNode extends ast {
 
     public void print(String indent) {
         System.out.println(indent + "If Statement:");
-        System.out.println(indent + "  Condition: " + text[0]);
         if (text.length > 1 && text[1] != null) {
-            System.out.println(indent + "  Else Block Present");
+            System.out.println(indent + "  contains Else Block");
         }
+        System.out.println(indent + "  Condition: ");
         for (ast child : children) {
             child.print(indent + "  "); // Erhöht die Einrückung für Kinder
         }

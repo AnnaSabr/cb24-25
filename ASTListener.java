@@ -1,3 +1,5 @@
+import org.antlr.v4.runtime.tree.ParseTree;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,11 +93,20 @@ public class ASTListener extends miniCBaseListener{
         List<ast> children = new ArrayList<>();
         String funcReturn = ctx.type().getText();
         String functionName = ctx.ID().getText();
-        String params = null;
+        ArrayList<String> parameters = new ArrayList<>();
         if(ctx.params() != null){
-            params=ctx.params().getText();
+            for(ParseTree a:ctx.params().children){
+                if(!a.getText().equals(",")){
+                    parameters.add(a.getText());
+                }
+            }
         }
-        String[] text={funcReturn, functionName, params};
+        String[] text = new String[parameters.size() +2];
+        text[0]=funcReturn;
+        text[1]=functionName;
+        for(int a=0;a<parameters.size();a++){
+            text[a+2]=parameters.get(a);
+        }
         fndeclNode fncDeclNode = new fndeclNode(text, children);
 
         fncDeclNode.setParent(this.getCurrentParentNode());
@@ -119,7 +130,7 @@ public class ASTListener extends miniCBaseListener{
         if (ctx.getChildCount() == 3) {
             String left = ctx.getChild(0).getText();
             String operator = ctx.getChild(1).getText();
-            String right = ctx.getChild(1).getText();
+            String right = ctx.getChild(2).getText();
             text= new String[]{left, operator, right};
         }
         //number
@@ -224,7 +235,16 @@ public class ASTListener extends miniCBaseListener{
     @Override
     public void enterReturn(miniCParser.ReturnContext ctx) {
         List<ast> children = new ArrayList<>();
-        String[] text ={ctx.getText()};
+        ArrayList<String> returns = new ArrayList<>();
+        for(ParseTree a:ctx.expr().children){
+            if(!a.getText().equals("return")){
+                returns.add(a.getText());
+            }
+        }
+        String[] text =new String[returns.size()];
+        for(int i=0;i<returns.size();i++){
+            text[i]=returns.get(i);
+        }
 
         returnNode returnNode = new returnNode(text, children);
         returnNode.setParent(this.getCurrentParentNode());
