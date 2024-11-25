@@ -1,10 +1,14 @@
-int ef(int a,int b,int c){
-    d=a+b+c;
-    int ef(int a, int b, int c){
-    return 5;
+int f95(int n) {
+    if (n == 0) {
+        return 1;
+    } else {
+        if (n == 1) {
+            return 1;
+        } else {
+            return f95(n - 1) + f95(n - 2) + f95(n - 3) + f95(n - 4) + f95(n - 5);
+        }
     }
-    return d;
 }
-ia();
-int c=7;
-ef(1,2,3);
+
+int n = 10;
+f95(n);

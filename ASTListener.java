@@ -51,7 +51,7 @@ public class ASTListener extends miniCBaseListener {
         String name = ctx.ID().getText();
         String arraySize = null;
         if (ctx.array() != null) {
-            arraySize = ctx.array().getText();  // Arraygröße, z. B. [10]
+            arraySize = ctx.array().toString();  // Arraygröße, z. B. [10]
         }
         String[] text = {type, name, arraySize};
 
@@ -84,8 +84,8 @@ public class ASTListener extends miniCBaseListener {
         List<ast> children = new ArrayList<>();
         String variableName = ctx.ID().getText();
         String array = null;
-        if (ctx.NUMBER() != null) {
-            array = ctx.NUMBER().getText();
+        if (ctx.array() != null) {
+            array = ctx.array().NUMBER().getText();
         }
 
         String[] text = {variableName, array};
