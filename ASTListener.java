@@ -43,6 +43,12 @@ public class ASTListener extends miniCBaseListener {
     }
 
     @Override
+    public void exitProgram(miniCParser.ProgramContext ctx) {
+        symbolTable.closeScope();
+        super.exitProgram(ctx);
+    }
+
+    @Override
     public void enterVardecl(miniCParser.VardeclContext ctx) {
         List<ast> children = new ArrayList<>();
 
@@ -55,12 +61,12 @@ public class ASTListener extends miniCBaseListener {
         }
         String[] text = {type, name, arraySize};
 
-        if (symbolTable.contains(name)) {
+        if (symbolTable.containsInCurrentScope(name)) {
             System.out.println("Fehler: Variable '" + name + "' ist bereits im aktuellen Scope definiert.");
         } else if (symbolTable.lookup(name) != null) {
             System.out.println("Fehler: Variable '" + name + "' ist bereits in einem oberen Scope definiert.");
         } else {
-            symbolTable.addSymbol(name, new Tabelle.Symbol(name, type, false));
+            symbolTable.addSymbol(name, new Tabelle.Symbol(name, type));
         }
 
         vardeclNode vardeclNode = new vardeclNode(text, children);
@@ -110,13 +116,6 @@ public class ASTListener extends miniCBaseListener {
         String funcReturn = ctx.type().getText();
         String functionName = ctx.ID().getText();
 
-        if (symbolTable.contains(functionName)) {
-            System.out.println("Fehler: Funktion '" + functionName + "' ist bereits im aktuellen Scope definiert.");
-        } else if (symbolTable.lookup(functionName) != null) {
-            System.out.println("Fehler: Funktion '" + functionName + "' ist bereits in einem oberen Scope definiert.");
-        } else {
-            symbolTable.addSymbol(functionName, new Tabelle.Symbol(functionName, funcReturn, true));
-        }
 
         ArrayList<String> parameters = new ArrayList<>();
         if (ctx.params() != null) {
@@ -126,6 +125,15 @@ public class ASTListener extends miniCBaseListener {
                 }
             }
         }
+
+        if (symbolTable.containsInCurrentScope(functionName)) {
+            System.out.println("Fehler: Funktion '" + functionName + "' ist bereits im aktuellen Scope definiert.");
+        } else if (symbolTable.lookup(functionName) != null) {
+            System.out.println("Fehler: Funktion '" + functionName + "' ist bereits in einem oberen Scope definiert.");
+        } else {
+            symbolTable.addSymbol(functionName, new Tabelle.Symbol(functionName, funcReturn, parameters));
+        }
+
         String[] text = new String[parameters.size() + 2];
         text[0] = funcReturn;
         text[1] = functionName;
@@ -303,7 +311,7 @@ public class ASTListener extends miniCBaseListener {
             text = new String[]{functionName, args};
         }
 
-        if (!symbolTable.contains(functionName)&&symbolTable.lookup(functionName)==null) {
+        if (!symbolTable.containsInCurrentScope(functionName)&&symbolTable.lookup(functionName)==null) {
             System.out.println("Fehler: Funktion'" + functionName + "' ist in keinem Scope definiert.");
         }
 
@@ -329,12 +337,12 @@ public class ASTListener extends miniCBaseListener {
             if (ctx.getChild(a).getText().equals(ctx.ID(b).getText())) {
                 String name = ctx.ID(b).getText();
                 String type = ctx.type(b).getText();
-                if (symbolTable.contains(name)) {
+                if (symbolTable.containsInCurrentScope(name)) {
                     System.out.println("Fehler: Parameter '" + name + "' ist bereits im aktuellen Scope definiert.");
                 } else if (symbolTable.lookup(name) != null) {
                     System.out.println("Fehler: Parameter '" + name + "' ist bereits in einem oberen Scope definiert.");
                 } else {
-                    symbolTable.addSymbol(name, new Tabelle.Symbol(name, type, false));
+                    symbolTable.addSymbol(name, new Tabelle.Symbol(name, type));
                 }
                 b++;
             }

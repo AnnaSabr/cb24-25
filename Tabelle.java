@@ -1,43 +1,54 @@
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
+
 
 public class Tabelle {
 
-    // Symboltabelle für einen Scope: Speichert Variablen und Funktionen
-    private Stack<Map<String, Symbol>> scopes;
+    // Stack von Scopes (jeder Scope ist eine Map)
+    private final Stack<Map<String, Symbol>> scopes;
+    HashMap<Integer, Map<String, Symbol>> allScopes = new HashMap<>();
+    int scopeCounter;
+    int scopeID;
+    Stack<Integer> stackID = new Stack<>();
 
     public Tabelle() {
-        // Initialisieren des Stack der Scopes
         scopes = new Stack<>();
-        // Erster Scope (globaler Scope)
-        openScope();
+        openScope(); // Initialer globaler Scope
+        scopeCounter=0;
     }
 
-    // Öffnet einen neuen Scope (für Funktionen, Blöcke, etc.)
+    // Scope-Management
     public void openScope() {
+        scopeCounter++;
+        scopeID=scopeCounter;
+        stackID.add(scopeID);
         scopes.push(new HashMap<>());
     }
 
-    // Schließt den aktuellen Scope
     public void closeScope() {
         if (!scopes.isEmpty()) {
             scopes.pop();
+        } else {
+            System.out.println("Fehler: Kein Scope zum Schließen vorhanden.");
         }
+        allScopes.put(stackID.peek(), this.scopes.getLast());
+        stackID.pop();
     }
 
-    // Fügt eine neue Variable oder Funktion zur Tabelle hinzu
+    // Symbol hinzufügen
     public void addSymbol(String name, Symbol symbol) {
+        if (scopes.isEmpty()) {
+            throw new IllegalStateException("Kein Scope vorhanden.");
+        }
+
         Map<String, Symbol> currentScope = scopes.peek();
         if (currentScope.containsKey(name)) {
-            // Fehler: Symbol bereits im aktuellen Scope definiert
             System.out.println("Fehler: Symbol '" + name + "' ist bereits im aktuellen Scope definiert.");
         } else {
             currentScope.put(name, symbol);
         }
     }
 
-    // Sucht ein Symbol im aktuellen Scope und allen übergeordneten Scopes
+    // Symbol nachschlagen (Scope-Kette durchlaufen)
     public Symbol lookup(String name) {
         for (int i = scopes.size() - 1; i >= 0; i--) {
             Map<String, Symbol> scope = scopes.get(i);
@@ -45,29 +56,74 @@ public class Tabelle {
                 return scope.get(name);
             }
         }
-        return null;
+        return null; // Nicht gefunden
     }
 
-    // Prüft, ob ein Symbol im aktuellen Scope existiert
-    public boolean contains(String name) {
-        return scopes.contains(name);
+    // Prüfen, ob ein Symbol nur im aktuellen Scope existiert
+    public boolean containsInCurrentScope(String name) {
+        if (scopes.isEmpty()) return false;
+        return scopes.peek().containsKey(name);
     }
 
-    // Symboldaten für Variablen und Funktionen
+    // Für spätere Läufe: Zugriff auf die Tabelle
+    public List<Map<String, Symbol>> getAllScopes() {
+        return Collections.unmodifiableList(scopes);
+    }
+
+    // Symbol-Klasse
     public static class Symbol {
-        String name;  // Name des Symbols
-        String type;  // Datentyp der Variable/Funktion
-        boolean isFunction; // Kennzeichnet, ob es sich um eine Funktion handelt
+        private final String name;  // Name des Symbols
+        private final String type;  // Typ der Variable oder Funktion
+        private final boolean isFunction; // Ist es eine Funktion?
+        private final List<String> parameterTypes; // Parameter (nur für Funktionen)
+        private final String returnType; // Rückgabetyp (nur für Funktionen)
 
-        public Symbol(String name, String type, boolean isFunction) {
+        // Konstruktor für Variablen
+        public Symbol(String name, String type) {
             this.name = name;
             this.type = type;
-            this.isFunction = isFunction;
+            this.isFunction = false;
+            this.parameterTypes = null;
+            this.returnType = null;
+        }
+
+        // Konstruktor für Funktionen
+        public Symbol(String name, String returnType, List<String> parameterTypes) {
+            this.name = name;
+            this.type = "function"; // Funktion wird als eigener Typ gespeichert
+            this.isFunction = true;
+            this.parameterTypes = parameterTypes;
+            this.returnType = returnType;
+        }
+
+        // Getter
+        public String getName() {
+            return name;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public boolean isFunction() {
+            return isFunction;
+        }
+
+        public List<String> getParameterTypes() {
+            return parameterTypes;
+        }
+
+        public String getReturnType() {
+            return returnType;
         }
 
         @Override
         public String toString() {
-            return (isFunction ? "Funktion " : "Variable ") + name + ": " + type;
+            if (isFunction) {
+                return "Funktion " + name + "(" + String.join(", ", parameterTypes) + "): " + returnType;
+            } else {
+                return "Variable " + name + ": " + type;
+            }
         }
     }
 }
