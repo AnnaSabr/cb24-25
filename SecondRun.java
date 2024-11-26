@@ -13,7 +13,7 @@ public class SecondRun extends ASTListener {
 
     @Override
     public void enterAssign(miniCParser.AssignContext ctx) {
-        String varName = ctx.ID().getText();
+        String varName = ctx.ID().toString();
         Tabelle.Symbol varSymbol = symbolTable.lookup(varName);
 
 

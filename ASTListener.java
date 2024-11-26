@@ -56,9 +56,7 @@ public class ASTListener extends miniCBaseListener {
         String type = ctx.type().getText();
         String name = ctx.ID().getText();
         String arraySize = null;
-        if (ctx.array() != null) {
-            arraySize = ctx.array().getText();  // Arraygröße, z. B. [10]
-        }
+
         String[] text = {type, name, arraySize};
 
         if (symbolTable.containsInCurrentScope(name)) {
@@ -80,6 +78,26 @@ public class ASTListener extends miniCBaseListener {
     }
 
     @Override
+    public void enterArray(miniCParser.ArrayContext ctx) {
+        List<ast> children = new ArrayList<>();
+        String size=ctx.NUMBER().getText();
+        String[] text = {size};
+        arrayNode arrayNode=new arrayNode(text, children);
+
+        arrayNode.setParent(this.getCurrentParentNode());
+        arrayNode.getParent().addChild(arrayNode);
+
+        this.addParent(arrayNode);
+        super.enterArray(ctx);
+    }
+
+    @Override
+    public void exitArray(miniCParser.ArrayContext ctx) {
+        this.removeParent();
+        super.exitArray(ctx);
+    }
+
+    @Override
     public void exitVardecl(miniCParser.VardeclContext ctx) {
         this.removeParent();
         super.exitVardecl(ctx);
@@ -88,10 +106,10 @@ public class ASTListener extends miniCBaseListener {
     @Override
     public void enterAssign(miniCParser.AssignContext ctx) {
         List<ast> children = new ArrayList<>();
-        String variableName = ctx.ID().getText();
+        String variableName = ctx.ID().toString();
         String array = null;
-        if (ctx.NUMBER() != null) {
-            array = ctx.NUMBER().getText();
+        if (ctx.array() != null) {
+            array = ctx.array().toString();
         }
 
         String[] text = {variableName, array};
@@ -333,10 +351,19 @@ public class ASTListener extends miniCBaseListener {
     public void enterParams(miniCParser.ParamsContext ctx) {
 
         int b = 0;
+        boolean first=true;
+        String name="";
+        String type="";
         for (int a = 0; a < ctx.getChildCount(); a++) {
             if (ctx.getChild(a).getText().equals(ctx.ID(b).getText())) {
-                String name = ctx.ID(b).getText();
-                String type = ctx.type(b).getText();
+                if(first){
+                    first=false;
+                    b++;
+                }
+                else{
+                    name = ctx.ID(b).getText();
+                    type = ctx.type(b).getText();
+                }
                 if (symbolTable.containsInCurrentScope(name)) {
                     System.out.println("Fehler: Parameter '" + name + "' ist bereits im aktuellen Scope definiert.");
                 } else if (symbolTable.lookup(name) != null) {
