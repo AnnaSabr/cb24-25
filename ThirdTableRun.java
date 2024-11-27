@@ -1,3 +1,4 @@
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -22,19 +23,24 @@ public class ThirdTableRun extends ASTListener{
         } else if (ctx.ID() != null) {
             return searchAllTables(ctx.ID().getText()); // Typ der Variable
         } else if (ctx.getChild(1) != null && (ctx.getChild(1).getText().equals("+") || ctx.getChild(1).getText().equals("-") || ctx.getChild(1).getText().equals("/") || ctx.getChild(1).getText().equals("*"))) {
-            return "int"; //
+            return "int";
         }else if(ctx.getChild(1) != null && (ctx.getChild(1).getText().equals("<") || ctx.getChild(1).getText().equals(">") ||  ctx.getChild(1).getText().equals("==")||  ctx.getChild(1).getText().equals("!="))){
             return "bool";
+        } else if (ctx.getChild(0).getText().equals("{")) {
+            return "array";
         }
         return "unknown";
     }
 
     public String searchAllTables(String name){
         Stack<Integer> stackIDcopy=stackID;
-        for(int a=0; a<stackIDcopy.size(); a++){
+        while(!stackIDcopy.isEmpty()){
             Map<String, Tabelle.Symbol> currentScope=symbolTable.allScopes.get(stackIDcopy.pop());
-            return currentScope.get(name).getType();
+            if(currentScope.get(name) != null){
+                return currentScope.get(name).getType();
+            }
         }
+
         return null;
     }
 
@@ -55,12 +61,14 @@ public class ThirdTableRun extends ASTListener{
 
     @Override
     public void exitVardecl(miniCParser.VardeclContext ctx) {
-        String type = ctx.ID().getText();
-        String exprType = getExpressionType(ctx.expr());
+        String type = ctx.type().getText();
+        if(ctx.expr()!=null) {
+            String exprType = getExpressionType(ctx.expr());
 
-        if (!type.equals(exprType)) {
-            System.err.println("Typfehler bei Zuweisung: Variable '" + ctx.ID().getText() +
-                "' hat Typ '" + type + "', Ausdruck hat Typ '" + exprType + "'.");
+            if (!type.equals(exprType)) {
+                System.err.println("Typfehler bei Deklaration: Variable '" + ctx.ID().getText() +
+                        "' hat Typ '" + type + "', Ausdruck hat Typ '" + exprType + "'.");
+            }
         }
 
         super.enterVardecl(ctx);
@@ -71,7 +79,7 @@ public class ThirdTableRun extends ASTListener{
         String expectedType="bool";
         String exprType = getExpressionType(ctx.expr());
         if (!expectedType.equals(exprType)){
-            System.err.println("Typfehler bei if-Anweisung: " + exprType + "gefunden anstatt bool");
+            System.err.println("Typfehler bei if-Anweisung: " + exprType + " gefunden anstatt bool");
         }
         super.exitCond(ctx);
     }
@@ -81,30 +89,75 @@ public class ThirdTableRun extends ASTListener{
         String expectedType="bool";
         String exprType = getExpressionType(ctx.expr());
         if (!expectedType.equals(exprType)){
-            System.err.println("Typfehler bei while-Anweisung: " + exprType + "gefunden anstatt bool");
+            System.err.println("Typfehler bei while-Anweisung: " + exprType + " gefunden anstatt bool");
         }
         super.exitWhile(ctx);
     }
 
     @Override
     public void enterProgram(miniCParser.ProgramContext ctx) {
-        scopeID=0;
-        scopeCounter=0;
+        scopeID=1;
+        scopeCounter=1;
         stackID.add(scopeID);
         super.enterProgram(ctx);
     }
 
     @Override
     public void enterBlock(miniCParser.BlockContext ctx) {
-        scopeCounter++;
-        scopeID=scopeCounter;
-        stackID.add(scopeID);
+        stackID.add(scopeCounter++);
         super.enterBlock(ctx);
     }
 
     @Override
     public void exitBlock(miniCParser.BlockContext ctx) {
-        stackID.pop();
         super.exitBlock(ctx);
+    }
+
+    @Override
+    public void exitFncall(miniCParser.FncallContext ctx) {
+        String type = searchAllTables(ctx.ID().getText());
+        if(type==null){
+            System.err.println("Funktion nicht gefunden: " + ctx.ID().getText());
+        }
+        else if(!type.equals("function")){
+            System.err.println("keine Funktion: " + ctx.ID().getText());
+        }
+        Stack<Integer> stackIDcopy=stackID;
+        Tabelle.Symbol symbol;
+        while(!stackIDcopy.isEmpty()){
+            Map<String, Tabelle.Symbol> currentScope=symbolTable.allScopes.get(stackIDcopy.pop());
+            if(currentScope.get(ctx.ID().getText()) != null){
+                symbol=currentScope.get(ctx.ID().getText());
+                List<String> paramsFromDef = symbol.getParameterTypes();
+                String[] argumente=ctx.args().getText().split(",");
+                if(!((paramsFromDef.size()/2)==argumente.length)){
+                 System.err.println("Anzahl Argumente ungültig");
+                 break;
+                }
+                for(int i=0;i<argumente.length;i++){
+                    String paramType = paramsFromDef.get(i*2);
+                    String matchingArgument=argumente[i];
+                    boolean matching=true;
+                    if (paramType.equals("int") && matchingArgument.equals("^\\d+$")){
+                    }
+                    else if (paramType.equals("string") && matchingArgument.equals("^\"([a-zA-Z]+)\"$")){}
+                    else if (paramType.equals("bool") && matchingArgument.equals("^true$")){}
+                    else if (paramType.equals("bool") && matchingArgument.equals("^false$")){}
+                    else if (searchAllTables(matchingArgument)!=null){
+                        String varType=searchAllTables(matchingArgument);
+                        if(!varType.equals(type)){
+                            matching=false;
+                        }
+                    }else {
+                        matching=false;
+                    }
+                    if(!matching){
+                        System.err.println("Argumente und Parameter stimmen nicht überein" + matchingArgument + paramType);
+                    }
+
+                }
+            }
+        }
+        super.exitFncall(ctx);
     }
 }

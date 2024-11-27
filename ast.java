@@ -66,8 +66,9 @@ class assignNode extends ast {
 
     public void print(String indent) {
         System.out.println(indent + "Assignment:");
-        System.out.println(indent + "  Variable: " + text[0] +
-                (text[1] != null ? ", Array Index: " + text[1] : ""));
+        System.out.println(indent + "  Variable: " + text[0]);
+
+                //(text[1] != null ? ", Array Index: " + text[1]: ""));
         for (ast child : children) {
             child.print(indent + "  "); // Erhöht die Einrückung für Kinder
         }
@@ -75,127 +76,127 @@ class assignNode extends ast {
 }
 
 
-    // Funktionsdeklarationsknoten
-    class fndeclNode extends ast {
-        fndeclNode(String[] text, List<ast> children) {
-            super(text, children);
-        }
-
-        public void print(String indent) {
-            System.out.println(indent + "Function Declaration:");
-            System.out.println(indent + "  Return Type: " + text[0] + ", Name: " + text[1]);
-            if (text.length > 2) {
-                System.out.print(indent + "  Parameters: ");
-                for (int h = 2; h < text.length - 1; h+=2) {
-                    System.out.print(text[h] + " " + text[h + 1] + ", ");
-                }
-                System.out.println("");
-
-            }
-            for (ast child : children) {
-                child.print(indent + "  "); // Erhöht die Einrückung für Kinder
-            }
-        }
+// Funktionsdeklarationsknoten
+class fndeclNode extends ast {
+    fndeclNode(String[] text, List<ast> children) {
+        super(text, children);
     }
 
-    // Return-Knoten
-    class returnNode extends ast {
-        returnNode(String[] text, List<ast> children) {
-            super(text, children);
-        }
-
-        public void print(String indent) {
-            System.out.print(indent + "Return Statement: ");
-            for (int c = 0; c < text.length; c++) {
-                System.out.print(text[c]);
+    public void print(String indent) {
+        System.out.println(indent + "Function Declaration:");
+        System.out.println(indent + "  Return Type: " + text[0] + ", Name: " + text[1]);
+        if (text.length > 2) {
+            System.out.print(indent + "  Parameters: ");
+            for (int h = 2; h < text.length - 1; h += 2) {
+                System.out.print(text[h] + " " + text[h + 1] + ", ");
             }
-            System.out.println();
+            System.out.println("");
+
+        }
+        for (ast child : children) {
+            child.print(indent + "  "); // Erhöht die Einrückung für Kinder
         }
     }
+}
 
-    // Ausdrucksknoten
-    class exprNode extends ast {
-        exprNode(String[] text, List<ast> children) {
-            super(text, children);
-        }
-
-        public void print(String indent) {
-            System.out.println(indent + "Expression:");
-            if (text.length == 3) {
-                System.out.println(indent + "  Left: " + text[0] + ", Operator: " + text[1] + ", Right: " + text[2]);
-            } else if (text.length == 1) {
-                System.out.println(indent + "  Value: " + text[0]);
-            }
-            for (ast child : children) {
-                child.print(indent + "  "); // Erhöht die Einrückung für Kinder
-            }
-        }
+// Return-Knoten
+class returnNode extends ast {
+    returnNode(String[] text, List<ast> children) {
+        super(text, children);
     }
 
-    // If-Knoten
-    class ifNode extends ast {
-        ifNode(String[] text, List<ast> children) {
-            super(text, children);
+    public void print(String indent) {
+        System.out.print(indent + "Return Statement: ");
+        for (int c = 0; c < text.length; c++) {
+            System.out.print(text[c]);
         }
+        System.out.println();
+    }
+}
 
-        public void print(String indent) {
-            System.out.println(indent + "If Statement:");
-            if (text.length > 1 && text[1] != null) {
-                System.out.println(indent + "  contains Else Block");
-            }
-            System.out.println(indent + "  Condition: ");
-            for (ast child : children) {
-                child.print(indent + "  "); // Erhöht die Einrückung für Kinder
-            }
-        }
+// Ausdrucksknoten
+class exprNode extends ast {
+    exprNode(String[] text, List<ast> children) {
+        super(text, children);
     }
 
-    // While-Knoten
-    class whileNode extends ast {
-        whileNode(String[] text, List<ast> children) {
-            super(text, children);
+    public void print(String indent) {
+        System.out.println(indent + "Expression:");
+        if (text.length == 3) {
+            System.out.println(indent + "  Left: " + text[0] + ", Operator: " + text[1] + ", Right: " + text[2]);
+        } else if (text.length == 1) {
+            System.out.println(indent + "  Value: " + text[0]);
         }
-
-        public void print(String indent) {
-            System.out.println(indent + "While Loop:");
-            System.out.println(indent + "  Condition: " + text[0]);
-            for (ast child : children) {
-                child.print(indent + "  "); // Erhöht die Einrückung für Kinder
-            }
+        for (ast child : children) {
+            child.print(indent + "  "); // Erhöht die Einrückung für Kinder
         }
     }
+}
 
-    // Block-Knoten
-    class blockNode extends ast {
-        blockNode(String[] text, List<ast> children) {
-            super(text, children);
-        }
-
-        public void print(String indent) {
-            System.out.println(indent + "Block:");
-            for (ast child : children) {
-                child.print(indent + "  "); // Erhöht die Einrückung für Kinder
-            }
-        }
+// If-Knoten
+class ifNode extends ast {
+    ifNode(String[] text, List<ast> children) {
+        super(text, children);
     }
 
-    // Funktionsaufrufknoten
-    class fncallNode extends ast {
-        fncallNode(String[] text, List<ast> children) {
-            super(text, children);
+    public void print(String indent) {
+        System.out.println(indent + "If Statement:");
+        if (text.length > 1 && text[1] != null) {
+            System.out.println(indent + "  contains Else Block");
         }
-
-        public void print(String indent) {
-            System.out.println(indent + "Function Call:");
-            System.out.println(indent + "  Function: " + text[0]);
-            if (text.length > 1 && text[1] != null) {
-                System.out.println(indent + "  Arguments: " + text[1]);
-            }
-            for (ast child : children) {
-                child.print(indent + "  "); // Erhöht die Einrückung für Kinder
-            }
+        System.out.println(indent + "  Condition: ");
+        for (ast child : children) {
+            child.print(indent + "  "); // Erhöht die Einrückung für Kinder
         }
     }
+}
+
+// While-Knoten
+class whileNode extends ast {
+    whileNode(String[] text, List<ast> children) {
+        super(text, children);
+    }
+
+    public void print(String indent) {
+        System.out.println(indent + "While Loop:");
+        System.out.println(indent + "  Condition: " + text[0]);
+        for (ast child : children) {
+            child.print(indent + "  "); // Erhöht die Einrückung für Kinder
+        }
+    }
+}
+
+// Block-Knoten
+class blockNode extends ast {
+    blockNode(String[] text, List<ast> children) {
+        super(text, children);
+    }
+
+    public void print(String indent) {
+        System.out.println(indent + "Block:");
+        for (ast child : children) {
+            child.print(indent + "  "); // Erhöht die Einrückung für Kinder
+        }
+    }
+}
+
+// Funktionsaufrufknoten
+class fncallNode extends ast {
+    fncallNode(String[] text, List<ast> children) {
+        super(text, children);
+    }
+
+    public void print(String indent) {
+        System.out.println(indent + "Function Call:");
+        System.out.println(indent + "  Function: " + text[0]);
+        if (text.length > 1 && text[1] != null) {
+            System.out.println(indent + "  Arguments: " + text[1]);
+        }
+        for (ast child : children) {
+            child.print(indent + "  "); // Erhöht die Einrückung für Kinder
+        }
+    }
+}
 
 class arrayNode extends ast {
     arrayNode(String[] text, List<ast> children) {
@@ -206,17 +207,5 @@ class arrayNode extends ast {
     }
 }
 
-    // Argument-Knoten
-    class argsNode extends ast {
-        argsNode(String[] text, List<ast> children) {
-            super(text, children);
-        }
 
-        public void print(String indent) {
-            System.out.println(indent + "Arguments:");
-            for (ast child : children) {
-                child.print(indent + "  "); // Erhöht die Einrückung für Kinder
-            }
-        }
-    }
 

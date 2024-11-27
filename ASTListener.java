@@ -3,8 +3,6 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import java.util.ArrayList;
 import java.util.List;
 
-import java.util.ArrayList;
-import java.util.List;
 
 public class ASTListener extends miniCBaseListener {
 
@@ -12,6 +10,10 @@ public class ASTListener extends miniCBaseListener {
     private ast firstNode;
     private List<ast> allParents = new ArrayList<>();
     private Tabelle symbolTable = new Tabelle();
+
+    public Tabelle getSymbolTable() {
+        return this.symbolTable;
+    }
 
     public void addParent(ast parent) {
         this.allParents.add(parent);
@@ -80,9 +82,13 @@ public class ASTListener extends miniCBaseListener {
     @Override
     public void enterArray(miniCParser.ArrayContext ctx) {
         List<ast> children = new ArrayList<>();
-        String size=ctx.NUMBER().getText();
-        String[] text = {size};
-        arrayNode arrayNode=new arrayNode(text, children);
+        String[] text = new String[]{};
+        if (ctx.NUMBER() != null) {
+            String size = ctx.NUMBER().getText();
+            text = new String[]{size};
+        }
+
+        arrayNode arrayNode = new arrayNode(text, children);
 
         arrayNode.setParent(this.getCurrentParentNode());
         arrayNode.getParent().addChild(arrayNode);
@@ -329,7 +335,7 @@ public class ASTListener extends miniCBaseListener {
             text = new String[]{functionName, args};
         }
 
-        if (!symbolTable.containsInCurrentScope(functionName)&&symbolTable.lookup(functionName)==null) {
+        if (!symbolTable.containsInCurrentScope(functionName) && symbolTable.lookup(functionName) == null) {
             System.out.println("Fehler: Funktion'" + functionName + "' ist in keinem Scope definiert.");
         }
 
@@ -351,19 +357,14 @@ public class ASTListener extends miniCBaseListener {
     public void enterParams(miniCParser.ParamsContext ctx) {
 
         int b = 0;
-        boolean first=true;
-        String name="";
-        String type="";
+        boolean first = true;
+        String name = "";
+        String type = "";
         for (int a = 0; a < ctx.getChildCount(); a++) {
             if (ctx.getChild(a).getText().equals(ctx.ID(b).getText())) {
-                if(first){
-                    first=false;
-                    b++;
-                }
-                else{
-                    name = ctx.ID(b).getText();
-                    type = ctx.type(b).getText();
-                }
+                name = ctx.ID(b).getText();
+                type = ctx.type(b).getText();
+
                 if (symbolTable.containsInCurrentScope(name)) {
                     System.out.println("Fehler: Parameter '" + name + "' ist bereits im aktuellen Scope definiert.");
                 } else if (symbolTable.lookup(name) != null) {

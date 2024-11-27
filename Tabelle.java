@@ -26,12 +26,13 @@ public class Tabelle {
 
     public void closeScope() {
         if (!scopes.isEmpty()) {
+            allScopes.put(stackID.peek(), this.scopes.getLast());
+            stackID.pop();
             scopes.pop();
         } else {
             System.out.println("Fehler: Kein Scope zum Schließen vorhanden.");
         }
-        allScopes.put(stackID.peek(), this.scopes.getLast());
-        stackID.pop();
+
     }
 
     // Symbol hinzufügen

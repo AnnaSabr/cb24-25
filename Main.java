@@ -27,6 +27,9 @@ public class Main {
         ParseTreeWalker walker = new ParseTreeWalker();
         walker.walk(listener, tree);
 
+        ThirdTableRun thirdRun = new ThirdTableRun(listener.getSymbolTable());
+        walker.walk(thirdRun, tree);
+
         ast root = listener.getFirstNode();
         root.print("");
     }
